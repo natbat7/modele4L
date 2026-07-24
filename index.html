@@ -59,6 +59,49 @@
         button.remove-btn:hover { background: #c53030; }
 
         .info { margin-top: 10px; font-size: 13px; color: #555; line-height: 1.6; }
+
+
+        /* ---- ADAPTATION SMARTPHONE ---- */
+        @media (max-width: 768px) {
+            #ui {
+                top: auto; /* Annule l'ancrage en haut */
+                bottom: 15px; /* Colle le menu en bas */
+                left: 50%;
+                transform: translateX(-50%); /* Le centre parfaitement */
+                width: 90%; /* Prend la largeur de l'écran avec une marge */
+                max-width: 350px;
+                padding: 15px;
+                max-height: 45vh; /* Ne dépasse pas la moitié de l'écran */
+                overflow-y: auto; /* Permet de scroller dans le petit menu si besoin */
+            }
+            
+            #ui h2 { 
+                font-size: 18px; 
+                margin-bottom: 10px; 
+            }
+            
+            .info { 
+                display: none; /* On cache le texte d'aide pour libérer l'écran */
+            }
+            
+            .custom-file-upload { 
+                padding: 10px 0; 
+                margin-bottom: 10px; 
+                font-size: 14px; 
+            }
+            
+            button.remove-btn { 
+                padding: 10px; 
+                margin-top: 15px; 
+                font-size: 14px; 
+            }
+            
+            label.slider-title { 
+                margin-top: 10px; 
+            }
+        }
+
+        
     </style>
 <!-- LIBRAIRIE CROPPER.JS (CSS) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
