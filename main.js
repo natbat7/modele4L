@@ -10,7 +10,7 @@ const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerH
 camera.position.set(3.5, 2, 4);
 
 // RENDERER (L'option alpha: true permet la transparence du fond)
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true,preserveDrawingBuffer: true });
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
@@ -42,8 +42,9 @@ texLoader.load(
         texture.repeat.set(10, 10);
         texture.encoding = THREE.sRGBEncoding;
 
+// ON REMPLACE LE RECTANGLE PAR UN CERCLE ÉLÉGANT
         const floor = new THREE.Mesh(
-            new THREE.PlaneGeometry(5, 7),
+            new THREE.CircleGeometry(3.5, 64), // Rayon de 3.5 et 64 segments pour un bord bien rond
             new THREE.MeshStandardMaterial({
                 map: texture,
                 roughness: 1,
@@ -51,7 +52,6 @@ texLoader.load(
             })
         );
         floor.rotation.x = -Math.PI / 2;
-        // On place le sol juste sous les roues
         floor.position.y = -0.1; 
         floor.receiveShadow = true;
         scene.add(floor);
@@ -289,4 +289,20 @@ window.addEventListener("resize", function(){
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+
+
+ /*====================================================
+ CAPTURE D'ÉCRAN (TÉLÉCHARGER LA 4L)
+====================================================*/
+const screenshotBtn = document.getElementById("screenshotBtn");
+if (screenshotBtn) {
+    screenshotBtn.addEventListener("click", function() {
+        renderer.render(scene, camera);
+        const dataURL = renderer.domElement.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.download = "Projet-4L-Trophy-2028-Sponsoring.png";
+        link.href = dataURL;
+        link.click();
+    });
+}
 });
