@@ -2,89 +2,125 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Configurateur Renault 4L</title>
+    <title>Configurateur Renault 4L — N&C 2028</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            /* IMAGE DE FOND FIXE */
             background-image: url('https://raw.githubusercontent.com/natbat7/modele4L/main/desert.jpg');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
         }
 
+        /* PANNEAU ASSORTI AU THÈME DU SITE (Gris foncé & Or) */
         #ui {
             position: absolute;
             top: 20px;
             left: 20px;
-            width: 260px;
-            background: rgba(255, 255, 255, 0.95);
+            width: 270px;
+            background: rgba(29, 34, 41, 0.95); /* #1d2229 avec légère transparence */
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border: 1px solid #c9a063; /* Bordure dorée */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
             z-index: 10;
-            backdrop-filter: blur(5px);
+            backdrop-filter: blur(8px);
+            color: #f3efe4;
         }
 
-        h2 { margin-top: 0; font-size: 22px; color: #222; text-align: center; }
+        h2 { 
+            margin-top: 0; 
+            font-size: 22px; 
+            color: #c9a063; 
+            text-align: center; 
+            text-transform: uppercase; 
+            letter-spacing: 1px;
+        }
 
-        /* Le nouveau design du bouton de fichier */
         input[type="file"] { display: none; }
+        
         .custom-file-upload {
             display: block;
             width: 100%;
             padding: 12px 0;
             margin-bottom: 15px;
-            background: #2b6cb0;
+            background: #c8402e; /* Rouge du site */
             color: white;
             text-align: center;
             border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
-            transition: background 0.3s;
+            transition: background 0.3s, transform 0.2s;
             box-sizing: border-box;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
-        .custom-file-upload:hover { background: #2c5282; }
+        .custom-file-upload:hover { background: #a83222; transform: translateY(-1px); }
 
-        label.slider-title { display: block; margin-top: 15px; font-weight: bold; font-size: 14px; color: #444; }
-        input[type="range"] { width: 100%; margin-top: 8px; cursor: pointer; }
+        label.slider-title { 
+            display: block; 
+            margin-top: 15px; 
+            font-weight: 600; 
+            font-size: 13px; 
+            color: #c9a063; 
+            text-transform: uppercase;
+        }
+        
+        input[type="range"] { 
+            width: 100%; 
+            margin-top: 8px; 
+            cursor: pointer; 
+            accent-color: #c9a063;
+        }
+
+        /* BOUTONS D'ACTION */
+        button.screenshot-btn {
+            width: 100%; margin-top: 20px; padding: 12px; border: 1px solid #c9a063;
+            border-radius: 8px; background: #252b34; color: #f3efe4;
+            cursor: pointer; font-weight: bold; transition: all 0.3s;
+        }
+        button.screenshot-btn:hover { background: #c9a063; color: #1d2229; }
 
         button.remove-btn {
-            width: 100%; margin-top: 25px; padding: 12px; border: none;
-            border-radius: 8px; background: #e53e3e; color: white;
-            cursor: pointer; font-weight: bold; transition: background 0.3s;
+            width: 100%; margin-top: 10px; padding: 10px; border: none;
+            border-radius: 8px; background: transparent; color: #b0aba0;
+            cursor: pointer; font-size: 13px; text-decoration: underline; transition: color 0.3s;
         }
-        button.remove-btn:hover { background: #c53030; }
+        button.remove-btn:hover { color: #e53e3e; }
 
-        .info { margin-top: 10px; font-size: 13px; color: #555; line-height: 1.6; }
-
+        .info { 
+            margin-top: 10px; 
+            font-size: 13px; 
+            color: #b0aba0; 
+            line-height: 1.6; 
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 3px solid #c9a063;
+        }
 
         /* ---- ADAPTATION SMARTPHONE ---- */
-    /* ---- ADAPTATION SMARTPHONE (V2 COMPACTE) ---- */
         @media (max-width: 768px) {
             #ui {
                 top: auto;
-                bottom: 10px; /* Plus collé au bord bas */
+                bottom: 15px;
                 left: 50%;
                 transform: translateX(-50%);
-                width: 92%;
-                max-width: 350px;
-                padding: 10px 15px; /* Moins de vide à l'intérieur */
-                max-height: 50vh;
+                width: 90%;
+                max-width: 340px;
+                padding: 12px 16px;
+                max-height: 55vh;
                 overflow-y: auto;
             }
-            #ui h2 { font-size: 16px; margin-bottom: 8px; }
+            #ui h2 { font-size: 18px; margin-bottom: 8px; }
             .info { display: none; }
-            .custom-file-upload { padding: 8px 0; margin-bottom: 8px; font-size: 14px; }
-            button.remove-btn { padding: 8px; margin-top: 10px; font-size: 14px; }
-            label.slider-title { margin-top: 5px; font-size: 13px; margin-bottom: 2px; }
-            input[type="range"] { margin-top: 2px; }
+            .custom-file-upload { padding: 10px 0; margin-bottom: 8px; font-size: 14px; }
+            button.screenshot-btn { margin-top: 10px; padding: 10px; }
+            button.remove-btn { margin-top: 5px; padding: 6px; }
+            label.slider-title { margin-top: 8px; font-size: 12px; }
         }
-        
     </style>
-<!-- LIBRAIRIE CROPPER.JS (CSS) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
 </head>
 
@@ -92,7 +128,6 @@
     <div id="ui">
         <h2>Configurateur 4L</h2>
         
-        <!-- Bouton masqué remplacé par un label stylisé -->
         <label for="logoInput" class="custom-file-upload">
             📷 Importer un logo
         </label>
@@ -101,7 +136,7 @@
         <div class="info">
             1) Choisissez un logo<br>
             2) Cliquez sur la carrosserie<br>
-            3) Ajustez sa taille et rotation
+            3) Ajustez sa taille et sa rotation
         </div>
 
         <label class="slider-title">Taille du logo</label>
@@ -110,29 +145,29 @@
         <label class="slider-title">Rotation</label>
         <input id="rotRange" type="range" min="-3.14" max="3.14" step="0.01" value="0">
 
+        <!-- NOUVEAU BOUTON CAPTURE PHOTO -->
+        <button id="screenshotBtn" class="screenshot-btn">📸 Télécharger ma photo</button>
+
         <button id="removeBtn" class="remove-btn">Supprimer le logo</button>
     </div>
-<!-- LA FENÊTRE DE RECADRAGE (Cachée par défaut) -->
-    <div id="cropModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center; flex-direction:column;">
-        <div style="background:white; padding:20px; border-radius:12px; width:90%; max-width:500px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-            <h3 style="margin-top:0; text-align:center; color:#222;">Recadrer le logo</h3>
+
+    <!-- LA FENÊTRE DE RECADRAGE -->
+    <div id="cropModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1000; align-items:center; justify-content:center; flex-direction:column;">
+        <div style="background:#1d2229; border: 1px solid #c9a063; padding:20px; border-radius:12px; width:90%; max-width:500px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); color: #f3efe4;">
+            <h3 style="margin-top:0; text-align:center; color:#c9a063; text-transform: uppercase;">Recadrer le logo</h3>
             
-            <!-- Zone où l'image va s'afficher -->
-            <div style="max-height: 50vh; overflow: hidden; background:#eee; margin-bottom:15px;">
+            <div style="max-height: 50vh; overflow: hidden; background:#12151b; margin-bottom:15px; border-radius: 6px;">
                 <img id="imageToCrop" style="max-width: 100%; display:block;">
             </div>
             
-            <!-- Boutons de validation -->
             <div style="display:flex; justify-content:space-between; gap:10px;">
-                <button id="cancelCropBtn" style="flex:1; padding:10px; background:#e53e3e; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Annuler</button>
-                <button id="applyCropBtn" style="flex:1; padding:10px; background:#38a169; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Valider</button>
+                <button id="cancelCropBtn" style="flex:1; padding:10px; background:#252b34; color:#f3efe4; border:1px solid #777; border-radius:8px; font-weight:bold; cursor:pointer;">Annuler</button>
+                <button id="applyCropBtn" style="flex:1; padding:10px; background:#c8402e; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Valider</button>
             </div>
         </div>
     </div>
 
-    <!-- LIBRAIRIE CROPPER.JS (JS) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-    <!-- LIBRAIRIES THREE.JS -->
     <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
