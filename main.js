@@ -9,8 +9,12 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(3.5, 2, 4);
 
-// RENDERER (L'option alpha: true permet la transparence du fond)
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true,preserveDrawingBuffer: true });
+// RENDERER (preserveDrawingBuffer: true EST INDISPENSABLE POUR LA CAPTURE PHOTO)
+const renderer = new THREE.WebGLRenderer({ 
+    antialias: true, 
+    alpha: true,
+    preserveDrawingBuffer: true 
+});
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
@@ -32,8 +36,9 @@ light.position.set(8, 10, 5);
 light.castShadow = true;
 scene.add(light);
 
-// SOL FIXE EN SABLE
+// SOL EN SABLE (SOCLE CIRCULAIRE)
 const texLoader = new THREE.TextureLoader();
+texLoader.setCrossOrigin('anonymous'); // Évite le blocage de sécurité du navigateur
 texLoader.load(
     "https://raw.githubusercontent.com/natbat7/modele4L/main/sable.jpg", 
     function(texture) {
@@ -42,9 +47,8 @@ texLoader.load(
         texture.repeat.set(10, 10);
         texture.encoding = THREE.sRGBEncoding;
 
-// ON REMPLACE LE RECTANGLE PAR UN CERCLE ÉLÉGANT
         const floor = new THREE.Mesh(
-            new THREE.CircleGeometry(3.5, 64), // Rayon de 3.5 et 64 segments pour un bord bien rond
+            new THREE.CircleGeometry(3.5, 64), // Socle rond et élégant
             new THREE.MeshStandardMaterial({
                 map: texture,
                 roughness: 1,
@@ -75,13 +79,14 @@ const decal = {
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 
-// CHARGEMENT 4L (Voiture fixe)
+// CHARGEMENT 4L
 const loader = new THREE.GLTFLoader();
+loader.setCrossOrigin('anonymous'); // Évite le blocage CORS
 loader.load(
     "https://raw.githubusercontent.com/natbat7/modele4L/main/renault_4_gtl.glb",
     function(gltf){
         car = gltf.scene;
-        car.position.set(0, -0.6, 0); // Position alignée avec le sol
+        car.position.set(0, -0.6, 0);
         
         car.traverse(function(obj){
             if(obj.isMesh){
@@ -140,76 +145,48 @@ let cropper = null;
 const cropModal = document.getElementById('cropModal');
 const imageToCrop = document.getElementById('imageToCrop');
 
-// 1. Quand l'utilisateur choisit un fichier
 document.getElementById("logoInput").addEventListener("change", function(event){
     const file = event.target.files[0];
     if(!file) return;
     
     const reader = new FileReader();
     reader.onload = function(e){
-        // On charge l'image dans la balise <img> de la modale
         imageToCrop.src = e.target.result;
-        
-        // On affiche la modale (pop-up)
         cropModal.style.display = 'flex';
         
-        // On initialise l'outil Cropper.js
         if(cropper) {
-            cropper.destroy(); // Nettoie si une image était déjà là
+            cropper.destroy();
         }
         cropper = new Cropper(imageToCrop, {
-            viewMode: 1, // Restreint le recadrage à la taille de l'image
+            viewMode: 1,
             autoCropArea: 0.8,
             background: false
         });
     };
     reader.readAsDataURL(file);
-    
-    // On réinitialise l'input pour pouvoir recharger la même image si besoin
     event.target.value = ''; 
 });
 
-// 2. Bouton "Annuler"
 document.getElementById('cancelCropBtn').addEventListener('click', function() {
     cropModal.style.display = 'none';
     if(cropper) cropper.destroy();
 });
 
-// 3. Bouton "Valider"
 document.getElementById('applyCropBtn').addEventListener('click', function() {
     if(!cropper) return;
     
-    // On récupère l'image recadrée
     const croppedCanvas = cropper.getCroppedCanvas();
-    
-    // On la transforme en donnée utilisable par Three.js
     const croppedDataUrl = croppedCanvas.toDataURL('image/png');
     
-    // On l'envoie dans le moteur 3D
     const loader = new THREE.TextureLoader();
     texture = loader.load(croppedDataUrl);
     texture.encoding = THREE.sRGBEncoding;
     decal.texture = texture;
     
-    // On change le texte du bouton de l'interface principale
     document.querySelector('.custom-file-upload').innerText = "✅ Logo recadré et chargé";
-    
-    // On ferme la modale
     cropModal.style.display = 'none';
     cropper.destroy();
 });
-
-
-
-
-
-
-
-
-
-
-
-
 
 // GESTION CLICS ET GLISSER
 renderer.domElement.addEventListener("pointerdown", function(event){
@@ -276,6 +253,28 @@ document.getElementById("removeBtn").onclick = function(){
     document.getElementById("logoInput").value = ""; 
 };
 
+/*====================================================
+ CAPTURE D'ÉCRAN (TÉLÉCHARGER LA 4L)
+====================================================*/
+const screenshotBtn = document.getElementById("screenshotBtn");
+if (screenshotBtn) {
+    screenshotBtn.addEventListener("click", function() {
+        // On force un rendu immédiat pour être sûr d'avoir l'image à l'instant T
+        renderer.render(scene, camera);
+        
+        try {
+            const dataURL = renderer.domElement.toDataURL("image/png");
+            const link = document.createElement("a");
+            link.download = "Projet-4L-Trophy-2028-Sponsoring.png";
+            link.href = dataURL;
+            link.click();
+        } catch (e) {
+            alert("Erreur de sécurité du navigateur lors de la capture. Vérifiez vos autorisations CORS.");
+            console.error("Erreur de capture :", e);
+        }
+    });
+}
+
 // ANIMATION STATIQUE
 function animate(){
     requestAnimationFrame(animate);
@@ -289,20 +288,4 @@ window.addEventListener("resize", function(){
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
-
-
- /*====================================================
- CAPTURE D'ÉCRAN (TÉLÉCHARGER LA 4L)
-====================================================*/
-const screenshotBtn = document.getElementById("screenshotBtn");
-if (screenshotBtn) {
-    screenshotBtn.addEventListener("click", function() {
-        renderer.render(scene, camera);
-        const dataURL = renderer.domElement.toDataURL("image/png");
-        const link = document.createElement("a");
-        link.download = "Projet-4L-Trophy-2028-Sponsoring.png";
-        link.href = dataURL;
-        link.click();
-    });
-}
 });
