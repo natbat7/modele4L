@@ -1,221 +1,424 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Configurateur Renault 4L — N&C 2028</title>
-    <style>
-        * { box-sizing: border-box; }
-        
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #12151b;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configurateur 3D Renault 4L — N&C 2028</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
 
-        /* STRUCTURE GLOBALE : MENU À GAUCHE, 3D À DROITE */
-        .layout {
-            display: flex;
-            width: 100vw;
-            height: 100vh;
-        }
+  <style>
+    :root {
+      --ink: #12151b;
+      --card: #1d2229;
+      --card-2: #252b34;
+      --paper: #f3efe4;
+      --sand: #c9a063;
+      --sand-deep: #8a6a3a;
+      --rally-red: #c8402e;
+      --muted: #b0aba0;
+      --border: #323b49;
+    }
 
-        /* PANNEAU DE CONTRÔLE (FORMULAIRE) */
-        #ui {
-            width: 320px;
-            height: 100%;
-            background: #1d2229;
-            border-right: 1px solid #c9a063;
-            padding: 25px 20px;
-            overflow-y: auto;
-            color: #f3efe4;
-            z-index: 10;
-            flex-shrink: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-        }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* ZONE 3D (SAHARA + 4L) */
-        #canvas-container {
-            flex: 1;
-            height: 100%;
-            position: relative;
-            background-image: url('https://raw.githubusercontent.com/natbat7/modele4L/main/desert.jpg');
-            background-size: cover;
-            background-position: center;
-        }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'IBM Plex Mono', monospace;
+      background: var(--ink);
+      color: var(--paper);
+      -webkit-font-smoothing: antialiased;
+    }
 
-        h2 { 
-            margin-top: 0; 
-            font-size: 22px; 
-            color: #c9a063; 
-            text-align: center; 
-            text-transform: uppercase; 
-            letter-spacing: 1px;
-            margin-bottom: 20px;
-        }
+    .layout {
+      display: flex;
+      width: 100vw;
+      height: 100vh;
+    }
 
-        input[type="file"] { display: none; }
-        
-        .custom-file-upload {
-            display: block;
-            width: 100%;
-            padding: 14px 0;
-            margin-bottom: 15px;
-            background: #c8402e;
-            color: white;
-            text-align: center;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.3s, transform 0.2s;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-        .custom-file-upload:hover { background: #a83222; transform: translateY(-1px); }
+    /* ---------- PANNEAU DE CONTRÔLE GAUCHE ---------- */
+    #ui {
+      width: 330px;
+      height: 100%;
+      background: var(--card);
+      border-right: 1px solid var(--sand-deep);
+      padding: 20px 18px;
+      overflow-y: auto;
+      z-index: 10;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
 
-        label.slider-title { 
-            display: block; 
-            margin-top: 15px; 
-            font-weight: 600; 
-            font-size: 13px; 
-            color: #c9a063; 
-            text-transform: uppercase;
-        }
-        
-        input[type="range"] { 
-            width: 100%; 
-            margin-top: 8px; 
-            cursor: pointer; 
-            accent-color: #c9a063;
-        }
+    h2 {
+      font-family: 'Oswald', sans-serif;
+      font-size: 22px;
+      color: var(--sand);
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
 
-        /* BOUTON TÉLÉCHARGER LA PHOTO */
-        button.screenshot-btn {
-            width: 100%; 
-            margin-top: 25px; 
-            padding: 14px; 
-            border: 1px solid #c9a063;
-            border-radius: 8px; 
-            background: #252b34; 
-            color: #f3efe4;
-            cursor: pointer; 
-            font-weight: bold; 
-            font-size: 14px;
-            transition: all 0.3s;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-        button.screenshot-btn:hover { background: #c9a063; color: #1d2229; }
+    input[type="file"] { display: none; }
 
-        /* BOUTON SUPPRIMER LE LOGO */
-        button.remove-btn {
-            width: 100%; 
-            margin-top: 10px; 
-            padding: 10px; 
-            border: none;
-            border-radius: 8px; 
-            background: transparent; 
-            color: #b0aba0;
-            cursor: pointer; 
-            font-size: 13px; 
-            text-decoration: underline; 
-            transition: color 0.3s;
-        }
-        button.remove-btn:hover { color: #e53e3e; }
+    .custom-file-upload {
+      display: block;
+      width: 100%;
+      padding: 13px 12px;
+      background: var(--rally-red);
+      color: var(--paper);
+      text-align: center;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Oswald', sans-serif;
+      font-size: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: background 0.25s, transform 0.2s;
+      box-shadow: 0 4px 12px rgba(200, 64, 46, 0.35);
+    }
+    .custom-file-upload:hover {
+      background: #e24e3a;
+      transform: translateY(-1px);
+    }
 
-        .info { 
-            margin: 10px 0; 
-            font-size: 13px; 
-            color: #b0aba0; 
-            line-height: 1.6; 
-            background: rgba(0,0,0,0.25);
-            padding: 12px;
-            border-radius: 6px;
-            border-left: 3px solid #c9a063;
-        }
+    .info {
+      font-size: 11.5px;
+      color: var(--muted);
+      line-height: 1.55;
+      background: rgba(18, 21, 27, 0.6);
+      padding: 10px 12px;
+      border-radius: 6px;
+      border-left: 3px solid var(--sand);
+    }
 
-        /* ---- ADAPTATION SMARTPHONE : 3D EN HAUT, FORMULAIRE EN BAS ---- */
-        @media (max-width: 768px) {
-            .layout {
-                flex-direction: column-reverse; /* Met le canvas en haut et le formulaire en bas */
-            }
-            #canvas-container {
-                width: 100%;
-                height: 55vh; /* 55% de l'écran pour la 4L */
-            }
-            #ui {
-                width: 100%;
-                height: 45vh; /* 45% de l'écran pour les contrôles */
-                border-right: none;
-                border-top: 1px solid #c9a063;
-                padding: 15px 20px;
-            }
-            h2 { font-size: 18px; margin-bottom: 10px; }
-            .info { display: none; } /* Masqué sur mobile pour gagner de la place */
-            button.screenshot-btn { margin-top: 15px; }
-        }
-    </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+    .control-group {
+      background: rgba(18, 21, 27, 0.45);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--sand);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .slider-val {
+      color: var(--paper);
+      font-weight: 400;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      cursor: pointer;
+      accent-color: var(--rally-red);
+    }
+
+    /* Sélecteur de couleur de carrosserie */
+    .color-swatches {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .swatch:hover, .swatch.active {
+      transform: scale(1.15);
+      border-color: var(--paper);
+      box-shadow: 0 0 8px rgba(201, 160, 99, 0.6);
+    }
+
+    /* Boutons d'angles de caméra rapides */
+    .cam-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .cam-btn {
+      padding: 7px 4px;
+      background: var(--card-2);
+      color: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .cam-btn:hover {
+      border-color: var(--sand);
+      color: var(--sand);
+    }
+
+    /* Boutons d'action finaux */
+    button.screenshot-btn {
+      width: 100%;
+      padding: 13px;
+      border: 1px solid var(--sand);
+      border-radius: 6px;
+      background: var(--card-2);
+      color: var(--paper);
+      cursor: pointer;
+      font-family: 'Oswald', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-size: 15px;
+      transition: all 0.25s;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    button.screenshot-btn:hover {
+      background: var(--sand);
+      color: var(--ink);
+    }
+
+    button.remove-btn {
+      width: 100%;
+      padding: 8px;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 11.5px;
+      text-decoration: underline;
+      transition: color 0.2s;
+    }
+    button.remove-btn:hover { color: #ff6b6b; }
+
+    /* ---------- ZONE 3D (SAHARA + 4L) ---------- */
+    #canvas-container {
+      flex: 1;
+      height: 100%;
+      position: relative;
+      background-image: url('desert.jpg'), url('https://raw.githubusercontent.com/natbat7/modele4L/main/desert.jpg');
+      background-size: cover;
+      background-position: center;
+      cursor: grab;
+    }
+    #canvas-container:active { cursor: grabbing; }
+
+    /* Écran de progression du modèle 3D (25 Mo) */
+    #loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(18, 21, 27, 0.88);
+      backdrop-filter: blur(6px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      z-index: 50;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+    #loading-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    .loader-bar-wrap {
+      width: min(260px, 75%);
+      height: 8px;
+      background: var(--ink);
+      border: 1px solid var(--sand-deep);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    #loader-bar-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--sand), var(--rally-red));
+      transition: width 0.2s ease;
+    }
+    #loader-text {
+      font-size: 12px;
+      color: var(--sand);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    /* Astuce flottante dans la vue 3D */
+    #hint-pill {
+      position: absolute;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(18, 21, 27, 0.85);
+      border: 1px solid var(--sand-deep);
+      color: var(--paper);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 5;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+    }
+
+    /* ---------- MODALE DE RECADRAGE ---------- */
+    #cropModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 12, 16, 0.9);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .crop-card {
+      background: var(--card);
+      border: 1px solid var(--sand);
+      padding: 20px;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.85);
+    }
+    .crop-card h3 {
+      font-family: 'Oswald', sans-serif;
+      text-align: center;
+      color: var(--sand);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      font-size: 20px;
+    }
+
+    /* ---------- ADAPTATION MOBILE ---------- */
+    @media (max-width: 768px) {
+      .layout { flex-direction: column-reverse; }
+      #canvas-container { width: 100%; height: 52vh; }
+      #ui {
+        width: 100%;
+        height: 48vh;
+        border-right: none;
+        border-top: 1px solid var(--sand);
+        padding: 14px 16px;
+        gap: 10px;
+      }
+      h2 { font-size: 18px; }
+      .info { display: none; }
+      #hint-pill { font-size: 10px; bottom: 10px; padding: 6px 12px; }
+    }
+  </style>
 </head>
-
 <body>
-    <div class="layout">
-        <!-- PANNEAU DE CONTRÔLE (FORMULAIRE) -->
-        <div id="ui">
-            <h2>Configurateur 4L</h2>
-            
-            <label for="logoInput" class="custom-file-upload">
-                📷 Importer un logo
-            </label>
-            <input type="file" id="logoInput" accept="image/*">
 
-            <div class="info">
-                1) Choisissez un logo<br>
-                2) Cliquez sur la carrosserie<br>
-                3) Ajustez sa taille et sa rotation
-            </div>
+  <div class="layout">
+    <!-- PANNEAU DE CONTRÔLE -->
+    <div id="ui">
+      <h2>Studio 3D — 4L 2028</h2>
 
-            <label class="slider-title">Taille du logo</label>
-            <input id="sizeRange" type="range" min="0.1" max="2" step="0.01" value="0.5">
+      <label for="logoInput" class="custom-file-upload" id="uploadLabel">
+        📷 1. Importer votre logo
+      </label>
+      <input type="file" id="logoInput" accept="image/*">
 
-            <label class="slider-title">Rotation</label>
-            <input id="rotRange" type="range" min="-3.14" max="3.14" step="0.01" value="0">
+      <div class="info">
+        1) Importez et recadrez votre logo<br>
+        2) <strong>Cliquez</strong> sur la 4L pour le poser<br>
+        3) Glissez le logo ou utilisez les curseurs
+      </div>
 
-            <!-- LE BOUTON RESTE DANS LE FORMULAIRE -->
-            <button id="screenshotBtn" class="screenshot-btn">📸 Télécharger ma photo</button>
-
-            <button id="removeBtn" class="remove-btn">Supprimer le logo</button>
+      <!-- Curseurs Taille & Rotation -->
+      <div class="control-group">
+        <div class="slider-header">
+          <span>Taille du logo</span>
+          <span class="slider-val" id="sizeVal">0.50</span>
         </div>
+        <input id="sizeRange" type="range" min="0.1" max="2" step="0.01" value="0.5">
 
-        <!-- ZONE 3D SANS AUCUN BLOC PAR-DESSUS -->
-        <div id="canvas-container"></div>
+        <div class="slider-header" style="margin-top: 10px;">
+          <span>Inclinaison / Rotation</span>
+          <span class="slider-val" id="rotVal">0°</span>
+        </div>
+        <input id="rotRange" type="range" min="-3.14" max="3.14" step="0.01" value="0">
+      </div>
+
+      <!-- Angles de vue rapides (Plan de marquage) -->
+      <div class="control-group">
+        <div class="slider-header" style="margin-bottom: 2px;">
+          <span>🎯 Vues rapides (Zones)</span>
+        </div>
+        <div class="cam-grid">
+          <button type="button" class="cam-btn" onclick="setCameraView('front')">Capot</button>
+          <button type="button" class="cam-btn" onclick="setCameraView('left')">Gauche</button>
+          <button type="button" class="cam-btn" onclick="setCameraView('right')">Droite</button>
+          <button type="button" class="cam-btn" onclick="setCameraView('back')">Coffre</button>
+          <button type="button" class="cam-btn" onclick="setCameraView('top')">Toit</button>
+          <button type="button" class="cam-btn" onclick="setCameraView('iso')">Vue 3/4</button>
+        </div>
+      </div>
+
+      <!-- Couleur de la 4L -->
+      <div class="control-group">
+        <div class="slider-header" style="margin-bottom: 2px;">
+          <span>🎨 Couleur de la 4L</span>
+        </div>
+        <div class="color-swatches">
+          <button type="button" class="swatch active" style="background:#766a1e;" title="Vert Olive Raid" onclick="setCarColor('#766a1e', this)"></button>
+          <button type="button" class="swatch" style="background:#c8402e;" title="Rouge Rallye" onclick="setCarColor('#c8402e', this)"></button>
+          <button type="button" class="swatch" style="background:#c9a063;" title="Sable du Sahara" onclick="setCarColor('#c9a063', this)"></button>
+          <button type="button" class="swatch" style="background:#f3efe4;" title="Blanc Glacier" onclick="setCarColor('#f3efe4', this)"></button>
+          <button type="button" class="swatch" style="background:#2b5b84;" title="Bleu Savane" onclick="setCarColor('#2b5b84', this)"></button>
+          <button type="button" class="swatch" style="background:#22262e;" title="Noir Mat" onclick="setCarColor('#22262e', this)"></button>
+        </div>
+      </div>
+
+      <button id="screenshotBtn" class="screenshot-btn">📸 Télécharger ma photo</button>
+      <button id="removeBtn" class="remove-btn">Réinitialiser / Supprimer le logo</button>
     </div>
 
-    <!-- LA FENÊTRE DE RECADRAGE -->
-    <div id="cropModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:1000; align-items:center; justify-content:center; flex-direction:column;">
-        <div style="background:#1d2229; border: 1px solid #c9a063; padding:20px; border-radius:12px; width:90%; max-width:500px; box-shadow: 0 10px 30px rgba(0,0,0,0.8); color: #f3efe4;">
-            <h3 style="margin-top:0; text-align:center; color:#c9a063; text-transform: uppercase;">Recadrer le logo</h3>
-            
-            <div style="max-height: 50vh; overflow: hidden; background:#12151b; margin-bottom:15px; border-radius: 6px;">
-                <img id="imageToCrop" style="max-width: 100%; display:block;">
-            </div>
-            
-            <div style="display:flex; justify-content:space-between; gap:10px;">
-                <button id="cancelCropBtn" style="flex:1; padding:10px; background:#252b34; color:#f3efe4; border:1px solid #777; border-radius:8px; font-weight:bold; cursor:pointer;">Annuler</button>
-                <button id="applyCropBtn" style="flex:1; padding:10px; background:#c8402e; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">Valider</button>
-            </div>
+    <!-- ZONE 3D -->
+    <div id="canvas-container">
+      <div id="loading-overlay">
+        <div id="loader-text">Préparation de la 4L… 0%</div>
+        <div class="loader-bar-wrap">
+          <div id="loader-bar-fill"></div>
         </div>
+      </div>
+      <div id="hint-pill">🖱️ Faites glisser pour tourner autour · Cliquez sur la 4L après import du logo</div>
     </div>
+  </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/geometries/DecalGeometry.js"></script>
-    <script src="main.js"></script>
+  <!-- MODALE DE RECADRAGE -->
+  <div id="cropModal">
+    <div class="crop-card">
+      <h3>Recadrer votre logo</h3>
+      <div style="max-height: 50vh; overflow: hidden; background: var(--ink); margin-bottom: 16px; border-radius: 6px;">
+        <img id="imageToCrop" style="max-width: 100%; display: block;" alt="Logo à recadrer">
+      </div>
+      <div style="display: flex; justify-content: space-between; gap: 10px;">
+        <button id="cancelCropBtn" style="flex:1; padding:11px; background:var(--card-2); color:var(--paper); border:1px solid var(--border); border-radius:6px; font-family:'Oswald',sans-serif; text-transform:uppercase; font-size:15px; cursor:pointer;">Annuler</button>
+        <button id="applyCropBtn" style="flex:1; padding:11px; background:var(--rally-red); color:white; border:none; border-radius:6px; font-family:'Oswald',sans-serif; text-transform:uppercase; font-size:15px; cursor:pointer;">Valider le logo</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+  <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://unpkg.com/three@0.128.0/examples/js/geometries/DecalGeometry.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>
