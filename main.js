@@ -167,10 +167,16 @@ function onCarLoaded(gltf) {
 }
 
 function onLoadProgress(xhr) {
-  if (xhr.lengthComputable && loaderBarFill && loaderText) {
+  if (xhr.lengthComputable && xhr.total > 0 && loaderBarFill && loaderText) {
     const pct = Math.min(100, Math.round((xhr.loaded / xhr.total) * 100));
     loaderBarFill.style.width = pct + "%";
     loaderText.textContent = "Préparation de la 4L… " + pct + "%";
+  } else if (loaderBarFill && loaderText) {
+    // Si GitHub masque la taille totale, on affiche les Mégaoctets téléchargés
+    const mb = (xhr.loaded / (1024 * 1024)).toFixed(1);
+    loaderBarFill.style.width = "100%";
+    loaderBarFill.style.background = "#c9a063"; 
+    loaderText.textContent = "Téléchargement 3D… " + mb + " Mo (Patientez)";
   }
 }
 
@@ -180,14 +186,20 @@ gltfLoader.load(
   "renault_4_gtl.glb",
   onCarLoaded,
   onLoadProgress,
-  () => {
+  (err) => {
+    console.warn("Fichier local non trouvé, essai avec le lien de secours natbat7...", err);
     gltfLoader.load(
       "https://raw.githubusercontent.com/natbat7/modele4L/main/renault_4_gtl.glb",
       onCarLoaded,
-      onLoadProgress
+      onLoadProgress,
+      (errFatal) => {
+        console.error("Erreur fatale de chargement de la 4L :", errFatal);
+        if (loaderText) loaderText.textContent = "⚠️ Erreur : Fichier 3D introuvable.";
+      }
     );
   }
 );
+
 
 // 8. CHANGEMENT DE COULEUR DE LA 4L
 window.setCarColor = function (hexColor, btnEl) {
