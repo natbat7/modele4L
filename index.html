@@ -213,10 +213,11 @@
       background-size: cover;
       background-position: center;
       cursor: grab;
+      touch-action: none; /* Améliore le support mobile */
     }
     #canvas-container:active { cursor: grabbing; }
 
-    /* Écran de progression du modèle 3D (25 Mo) */
+    /* Écran de progression du modèle 3D */
     #loading-overlay {
       position: absolute;
       inset: 0;
@@ -334,9 +335,10 @@
       <input type="file" id="logoInput" accept="image/*">
 
       <div class="info">
-        1) Importez et recadrez votre logo<br>
-        2) <strong>Cliquez</strong> sur la 4L pour le poser<br>
-        3) Glissez le logo ou utilisez les curseurs
+        1) Importez et validez votre logo<br>
+        2) <strong>Cliquez</strong> sur la 4L pour le coller<br>
+        3) Ajustez sa taille (modifie le dernier posé)<br>
+        4) Cliquez ailleurs pour en poser un autre !
       </div>
 
       <!-- Curseurs Taille & Rotation -->
@@ -375,50 +377,4 @@
           <span>🎨 Couleur de la 4L</span>
         </div>
         <div class="color-swatches">
-          <button type="button" class="swatch active" style="background:#766a1e;" title="Vert Olive Raid" onclick="setCarColor('#766a1e', this)"></button>
-          <button type="button" class="swatch" style="background:#c8402e;" title="Rouge Rallye" onclick="setCarColor('#c8402e', this)"></button>
-          <button type="button" class="swatch" style="background:#c9a063;" title="Sable du Sahara" onclick="setCarColor('#c9a063', this)"></button>
-          <button type="button" class="swatch" style="background:#f3efe4;" title="Blanc Glacier" onclick="setCarColor('#f3efe4', this)"></button>
-          <button type="button" class="swatch" style="background:#2b5b84;" title="Bleu Savane" onclick="setCarColor('#2b5b84', this)"></button>
-          <button type="button" class="swatch" style="background:#22262e;" title="Noir Mat" onclick="setCarColor('#22262e', this)"></button>
-        </div>
-      </div>
-
-      <button id="screenshotBtn" class="screenshot-btn">📸 Télécharger ma photo</button>
-      <button id="removeBtn" class="remove-btn">Réinitialiser / Supprimer le logo</button>
-    </div>
-
-    <!-- ZONE 3D -->
-    <div id="canvas-container">
-      <div id="loading-overlay">
-        <div id="loader-text">Préparation de la 4L… 0%</div>
-        <div class="loader-bar-wrap">
-          <div id="loader-bar-fill"></div>
-        </div>
-      </div>
-      <div id="hint-pill">🖱️ Faites glisser pour tourner autour · Cliquez sur la 4L après import du logo</div>
-    </div>
-  </div>
-
-  <!-- MODALE DE RECADRAGE -->
-  <div id="cropModal">
-    <div class="crop-card">
-      <h3>Recadrer votre logo</h3>
-      <div style="max-height: 50vh; overflow: hidden; background: var(--ink); margin-bottom: 16px; border-radius: 6px;">
-        <img id="imageToCrop" style="max-width: 100%; display: block;" alt="Logo à recadrer">
-      </div>
-      <div style="display: flex; justify-content: space-between; gap: 10px;">
-        <button id="cancelCropBtn" style="flex:1; padding:11px; background:var(--card-2); color:var(--paper); border:1px solid var(--border); border-radius:6px; font-family:'Oswald',sans-serif; text-transform:uppercase; font-size:15px; cursor:pointer;">Annuler</button>
-        <button id="applyCropBtn" style="flex:1; padding:11px; background:var(--rally-red); color:white; border:none; border-radius:6px; font-family:'Oswald',sans-serif; text-transform:uppercase; font-size:15px; cursor:pointer;">Valider le logo</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-  <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
-  <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-  <script src="https://unpkg.com/three@0.128.0/examples/js/geometries/DecalGeometry.js"></script>
-  <script src="main.js"></script>
-</body>
-</html>
+          <button type="button" class="swatch active" style="
