@@ -11,7 +11,12 @@ const hintPill = document.getElementById("hint-pill");
 
 // 1. SCÈNE & CAMÉRA
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(
+  45,
+  (container.clientWidth || window.innerWidth) / (container.clientHeight || window.innerHeight),
+  0.1,
+  1000
+);
 camera.position.set(3.5, 2.0, 4.0);
 
 // 2. RENDERER
@@ -20,8 +25,8 @@ const renderer = new THREE.WebGLRenderer({
   alpha: true,
   preserveDrawingBuffer: true
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(container.clientWidth, container.clientHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setSize(container.clientWidth || window.innerWidth, container.clientHeight || window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
@@ -31,7 +36,7 @@ container.appendChild(renderer.domElement);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
-controls.maxPolarAngle = Math.PI / 2 - 0.02; 
+controls.maxPolarAngle = Math.PI / 2 - 0.02;
 controls.minDistance = 1.8;
 controls.maxDistance = 8.5;
 controls.target.set(0, 0.55, 0);
@@ -95,7 +100,7 @@ let paintMaterials = [];
 let paintableMeshes = [];
 
 const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
+const mouse = new THREE.Vector2(0, 0);
 
 // Matériaux exclus du collage de logo (pneus, jantes, intérieur, phares)
 const EXCLUDED_MATS = ["pneus", "jantes", "centre_roues", "sieges", "tapis", "compteur", "feux_ar", "Mat.8", "Mat.3"];
@@ -176,8 +181,9 @@ window.setCameraView = function (viewKey) {
   };
 };
 
-// 9. LOGIQUE MULTI-LOGOS (Pose et ajustement du dernier posé)
+// 9. LOGIQUE MULTI-LOGOS (Pose par Espace ou Clic + Ajustement)
 const logos = [];
+let isDraggingLogo = false;
 const currentLogoState = {
   texture: null,
   size: 0.5,
@@ -187,8 +193,7 @@ const currentLogoState = {
 function placeLogo(hit) {
   if (!currentLogoState.texture) return;
 
-  const position = hit.point;
-  // Récupération sécurisée de la normale (inclinaison de la tôle)
+  const position = hit.point.clone();
   const normal = hit.face ? hit.face.normal.clone() : new THREE.Vector3(0, 0, 1);
   normal.transformDirection(hit.object.matrixWorld);
 
@@ -213,8 +218,6 @@ function placeLogo(hit) {
   });
 
   const logoMesh = new THREE.Mesh(geometry, material);
-  
-  // On sauvegarde les données pour pouvoir modifier le logo juste après l'avoir posé
   logoMesh.userData = {
     target: hit.object,
     position: position.clone(),
@@ -227,7 +230,7 @@ function placeLogo(hit) {
 
 function updateLastLogo() {
   if (logos.length === 0) return;
-  
+
   const lastLogo = logos[logos.length - 1];
   const data = lastLogo.userData;
 
@@ -285,8 +288,8 @@ document.getElementById("applyCropBtn").addEventListener("click", function () {
   loadedTex.encoding = THREE.sRGBEncoding;
   currentLogoState.texture = loadedTex;
 
-  document.getElementById("uploadLabel").innerText = "✅ Logo prêt (Cliquez sur la 4L)";
-  if (hintPill) hintPill.textContent = "👆 Cliquez maintenant n'importe où sur la carrosserie pour poser votre logo !";
+  document.getElementById("uploadLabel").innerText = "✅ Logo prêt (ESPACE ou Clic)";
+  if (hintPill) hintPill.textContent = "👆 Visez la 4L avec la souris et appuyez sur ESPACE (ou cliquez) pour coller le logo !";
   cropModal.style.display = "none";
   cropper.destroy();
 });
@@ -310,79 +313,72 @@ renderer.domElement.addEventListener("pointerdown", function (event) {
   mouse.set(pos.x, pos.y);
   raycaster.setFromCamera(mouse, camera);
 
-  // Vérifie si on clique sur un logo existant pour le déplacer
-  for (let i = logos.length - 1; i >= 0; i--) {
-    const logoHit = raycaster.intersectObject(logos[i]);
-    if (logoHit.length) {
-      decal.dragging = true;
+  // Si on clique sur le dernier logo posé, on permet de le glisser
+  if (logos.length > 0) {
+    const lastLogo = logos[logos.length - 1];
+    const logoHit = raycaster.intersectObject(lastLogo);
+    if (logoHit.length > 0) {
+      isDraggingLogo = true;
       controls.enabled = false;
-      return;
     }
   }
 });
 
-// Suivi permanent de la souris (indispensable pour la touche Espace)
 renderer.domElement.addEventListener("pointermove", function (event) {
-  // On met à jour la position de la souris en continu
   const pos = getMousePos(event);
   mouse.set(pos.x, pos.y);
 
-  // Si on est en train de faire glisser un logo
-  if (decal.dragging && car) {
+  if (isDraggingLogo && car && logos.length > 0) {
     raycaster.setFromCamera(mouse, camera);
     const targets = paintableMeshes.length ? paintableMeshes : [car];
     const hits = raycaster.intersectObjects(targets, true);
-    
-    if (hits.length > 0) {
-      // Met à jour la position du dernier logo manipulé
-      if (logos.length > 0) {
-        const lastLogo = logos[logos.length - 1];
-        lastLogo.userData.target = hits[0].object;
-        lastLogo.userData.position.copy(hits[0].point);
-        lastLogo.userData.normal.copy(hits[0].face.normal).transformDirection(hits[0].object.matrixWorld);
-        updateLastLogo();
-      }
+
+    if (hits.length > 0 && hits[0].face) {
+      const lastLogo = logos[logos.length - 1];
+      lastLogo.userData.target = hits[0].object;
+      lastLogo.userData.position.copy(hits[0].point);
+      lastLogo.userData.normal.copy(hits[0].face.normal).transformDirection(hits[0].object.matrixWorld);
+      updateLastLogo();
     }
   }
 });
 
 renderer.domElement.addEventListener("pointerup", function (event) {
-  if (decal.dragging) {
-    decal.dragging = false;
+  if (isDraggingLogo) {
+    isDraggingLogo = false;
     controls.enabled = true;
     return;
   }
 
-  // Comportement Tactile / Clic : Pose le logo si on n'a pas bougé la caméra
   const dist = Math.hypot(event.clientX - ptrDown.x, event.clientY - ptrDown.y);
   if (dist > 15 || !car || !currentLogoState.texture) return;
 
+  const pos = getMousePos(event);
+  mouse.set(pos.x, pos.y);
   raycaster.setFromCamera(mouse, camera);
+
   const targets = paintableMeshes.length ? paintableMeshes : [car];
   const hits = raycaster.intersectObjects(targets, true);
-  
+
   if (hits.length > 0) {
     placeLogo(hits[0]);
-    if (hintPill) hintPill.textContent = "✅ Logo collé ! Ajustez sa taille, ou visez ailleurs et appuyez sur ESPACE.";
+    if (hintPill) hintPill.textContent = "✅ Logo collé ! Ajustez sa taille à gauche, ou visez ailleurs et appuyez sur ESPACE.";
   }
 });
 
-// --- NOUVEAUTÉ : POSE DU LOGO AVEC LA TOUCHE ESPACE ---
+// POSE DU LOGO AVEC LA TOUCHE ESPACE
 window.addEventListener("keydown", function (event) {
-  // Si la touche appuyée est "Espace" (code 32)
   if (event.code === "Space") {
-    event.preventDefault(); // Empêche la page de défiler vers le bas
-
+    event.preventDefault();
     if (!car || !currentLogoState.texture) return;
 
-    // Utilise la dernière position connue de la souris (mise à jour via pointermove)
     raycaster.setFromCamera(mouse, camera);
     const targets = paintableMeshes.length ? paintableMeshes : [car];
     const hits = raycaster.intersectObjects(targets, true);
-    
+
     if (hits.length > 0) {
       placeLogo(hits[0]);
-      if (hintPill) hintPill.textContent = "✅ Logo collé ! Ajustez sa taille, ou visez ailleurs et appuyez sur ESPACE.";
+      if (hintPill) hintPill.textContent = "✅ Logo collé ! Ajustez sa taille à gauche, ou visez ailleurs et appuyez sur ESPACE.";
     }
   }
 });
@@ -402,8 +398,7 @@ document.getElementById("rotRange").addEventListener("input", function (e) {
 });
 
 document.getElementById("removeBtn").addEventListener("click", function () {
-  // Supprime tous les logos présents sur la voiture
-  logos.forEach(l => {
+  logos.forEach((l) => {
     l.geometry.dispose();
     l.material.dispose();
     scene.remove(l);
@@ -412,7 +407,7 @@ document.getElementById("removeBtn").addEventListener("click", function () {
   currentLogoState.texture = null;
 
   document.getElementById("uploadLabel").innerText = "📷 1. Importer votre logo";
-  if (hintPill) hintPill.textContent = "🖱️ Faites glisser pour tourner autour · Cliquez sur la 4L après import du logo";
+  if (hintPill) hintPill.textContent = "🖱️ Faites glisser pour tourner autour · Importez un logo à gauche";
 });
 
 // 13. CAPTURE D'ÉCRAN HAUTE QUALITÉ (AVEC LE FOND SAHARA INCLUS)
@@ -425,7 +420,6 @@ document.getElementById("screenshotBtn").addEventListener("click", function () {
     outCanvas.height = glCanvas.height;
     const ctx = outCanvas.getContext("2d");
 
-    // Dessine le désert en fond
     if (bgImage.complete && bgImage.naturalWidth > 0) {
       const imgRatio = bgImage.naturalWidth / bgImage.naturalHeight;
       const canvasRatio = outCanvas.width / outCanvas.height;
@@ -447,10 +441,8 @@ document.getElementById("screenshotBtn").addEventListener("click", function () {
       ctx.fillRect(0, 0, outCanvas.width, outCanvas.height);
     }
 
-    // Superpose le rendu 3D
     ctx.drawImage(glCanvas, 0, 0);
 
-    // Ajoute un filigrane de l'association
     ctx.font = "bold 16px 'Oswald', sans-serif";
     ctx.fillStyle = "rgba(243, 239, 228, 0.85)";
     ctx.textAlign = "right";
