@@ -281,4 +281,151 @@ document.getElementById("applyCropBtn").addEventListener("click", function () {
   const croppedCanvas = cropper.getCroppedCanvas();
   const croppedDataUrl = croppedCanvas.toDataURL("image/png");
 
-  const loadedTex = texLoader.load(cropped
+  const loadedTex = texLoader.load(croppedDataUrl);
+  loadedTex.encoding = THREE.sRGBEncoding;
+  currentLogoState.texture = loadedTex;
+
+  document.getElementById("uploadLabel").innerText = "✅ Logo prêt (Cliquez sur la 4L)";
+  if (hintPill) hintPill.textContent = "👆 Cliquez maintenant n'importe où sur la carrosserie pour poser votre logo !";
+  cropModal.style.display = "none";
+  cropper.destroy();
+});
+
+// 11. GESTION DU CLIC POUR POSER LE LOGO (SANS CONFLIT AVEC LA CAMÉRA)
+function getMousePos(event) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  return {
+    x: ((event.clientX - rect.left) / rect.width) * 2 - 1,
+    y: -((event.clientY - rect.top) / rect.height) * 2 - 1
+  };
+}
+
+let ptrDown = { x: 0, y: 0 };
+
+renderer.domElement.addEventListener("pointerdown", function (event) {
+  ptrDown = { x: event.clientX, y: event.clientY };
+});
+
+renderer.domElement.addEventListener("pointerup", function (event) {
+  // Tolérance augmentée à 15 pixels : si la souris a bougé, c'est une rotation de caméra, on ignore.
+  const dist = Math.hypot(event.clientX - ptrDown.x, event.clientY - ptrDown.y);
+  if (dist > 15 || !car || !currentLogoState.texture) return;
+
+  const pos = getMousePos(event);
+  mouse.set(pos.x, pos.y);
+  raycaster.setFromCamera(mouse, camera);
+
+  // On vise la carrosserie (les logos déjà posés sont ignorés pour ne pas bloquer le rayon)
+  const targets = paintableMeshes.length ? paintableMeshes : [car];
+  const hits = raycaster.intersectObjects(targets, true);
+  
+  if (hits.length > 0) {
+    placeLogo(hits[0]);
+    if (hintPill) hintPill.textContent = "✅ Logo collé ! Ajustez sa taille à gauche, ou cliquez ailleurs pour en poser un autre.";
+  }
+});
+
+// 12. SLIDERS & RÉINITIALISATION
+document.getElementById("sizeRange").addEventListener("input", function (e) {
+  currentLogoState.size = parseFloat(e.target.value);
+  document.getElementById("sizeVal").textContent = currentLogoState.size.toFixed(2);
+  updateLastLogo();
+});
+
+document.getElementById("rotRange").addEventListener("input", function (e) {
+  currentLogoState.rotation = parseFloat(e.target.value);
+  const deg = Math.round((currentLogoState.rotation * 180) / Math.PI);
+  document.getElementById("rotVal").textContent = deg + "°";
+  updateLastLogo();
+});
+
+document.getElementById("removeBtn").addEventListener("click", function () {
+  // Supprime tous les logos présents sur la voiture
+  logos.forEach(l => {
+    l.geometry.dispose();
+    l.material.dispose();
+    scene.remove(l);
+  });
+  logos.length = 0;
+  currentLogoState.texture = null;
+
+  document.getElementById("uploadLabel").innerText = "📷 1. Importer votre logo";
+  if (hintPill) hintPill.textContent = "🖱️ Faites glisser pour tourner autour · Cliquez sur la 4L après import du logo";
+});
+
+// 13. CAPTURE D'ÉCRAN HAUTE QUALITÉ (AVEC LE FOND SAHARA INCLUS)
+document.getElementById("screenshotBtn").addEventListener("click", function () {
+  renderer.render(scene, camera);
+  try {
+    const glCanvas = renderer.domElement;
+    const outCanvas = document.createElement("canvas");
+    outCanvas.width = glCanvas.width;
+    outCanvas.height = glCanvas.height;
+    const ctx = outCanvas.getContext("2d");
+
+    // Dessine le désert en fond
+    if (bgImage.complete && bgImage.naturalWidth > 0) {
+      const imgRatio = bgImage.naturalWidth / bgImage.naturalHeight;
+      const canvasRatio = outCanvas.width / outCanvas.height;
+      let drawW, drawH, offsetX, offsetY;
+      if (canvasRatio > imgRatio) {
+        drawW = outCanvas.width;
+        drawH = outCanvas.width / imgRatio;
+        offsetX = 0;
+        offsetY = (outCanvas.height - drawH) / 2;
+      } else {
+        drawH = outCanvas.height;
+        drawW = outCanvas.height * imgRatio;
+        offsetX = (outCanvas.width - drawW) / 2;
+        offsetY = 0;
+      }
+      ctx.drawImage(bgImage, offsetX, offsetY, drawW, drawH);
+    } else {
+      ctx.fillStyle = "#12151b";
+      ctx.fillRect(0, 0, outCanvas.width, outCanvas.height);
+    }
+
+    // Superpose le rendu 3D
+    ctx.drawImage(glCanvas, 0, 0);
+
+    // Ajoute un filigrane de l'association
+    ctx.font = "bold 16px 'Oswald', sans-serif";
+    ctx.fillStyle = "rgba(243, 239, 228, 0.85)";
+    ctx.textAlign = "right";
+    ctx.fillText("N&C 4L TROPHY 2028 · C'EST BEAU 2 RÊVER", outCanvas.width - 20, outCanvas.height - 18);
+
+    const dataURL = outCanvas.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.download = "Ma-4L-Sponsor-2028.png";
+    link.href = dataURL;
+    link.click();
+  } catch (e) {
+    console.error("Erreur lors de la capture :", e);
+  }
+});
+
+// 14. BOUCLE D'ANIMATION & REDIMENSIONNEMENT
+function animate(now) {
+  requestAnimationFrame(animate);
+
+  if (camAnim) {
+    const t = Math.min(1, (now - camAnim.startTime) / camAnim.duration);
+    const ease = 1 - Math.pow(1 - t, 3);
+    camera.position.lerpVectors(camAnim.startPos, camAnim.endPos, ease);
+    controls.target.lerpVectors(camAnim.startTarget, camAnim.endTarget, ease);
+    if (t >= 1) camAnim = null;
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(animate);
+
+window.addEventListener("resize", function () {
+  if (!container) return;
+  const width = container.clientWidth;
+  const height = container.clientHeight;
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height);
+});
