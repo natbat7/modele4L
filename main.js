@@ -291,7 +291,7 @@ document.getElementById("applyCropBtn").addEventListener("click", function () {
   cropper.destroy();
 });
 
-// 11. GESTION DU CLIC POUR POSER LE LOGO (SANS CONFLIT AVEC LA CAMÉRA)
+// 11. GESTION DU CLIC, DU SURVOL ET DE LA TOUCHE ESPACE
 function getMousePos(event) {
   const rect = renderer.domElement.getBoundingClientRect();
   return {
@@ -304,24 +304,86 @@ let ptrDown = { x: 0, y: 0 };
 
 renderer.domElement.addEventListener("pointerdown", function (event) {
   ptrDown = { x: event.clientX, y: event.clientY };
-});
 
-renderer.domElement.addEventListener("pointerup", function (event) {
-  // Tolérance augmentée à 15 pixels : si la souris a bougé, c'est une rotation de caméra, on ignore.
-  const dist = Math.hypot(event.clientX - ptrDown.x, event.clientY - ptrDown.y);
-  if (dist > 15 || !car || !currentLogoState.texture) return;
-
+  if (!currentLogoState.texture) return;
   const pos = getMousePos(event);
   mouse.set(pos.x, pos.y);
   raycaster.setFromCamera(mouse, camera);
 
-  // On vise la carrosserie (les logos déjà posés sont ignorés pour ne pas bloquer le rayon)
+  // Vérifie si on clique sur un logo existant pour le déplacer
+  for (let i = logos.length - 1; i >= 0; i--) {
+    const logoHit = raycaster.intersectObject(logos[i]);
+    if (logoHit.length) {
+      decal.dragging = true;
+      controls.enabled = false;
+      return;
+    }
+  }
+});
+
+// Suivi permanent de la souris (indispensable pour la touche Espace)
+renderer.domElement.addEventListener("pointermove", function (event) {
+  // On met à jour la position de la souris en continu
+  const pos = getMousePos(event);
+  mouse.set(pos.x, pos.y);
+
+  // Si on est en train de faire glisser un logo
+  if (decal.dragging && car) {
+    raycaster.setFromCamera(mouse, camera);
+    const targets = paintableMeshes.length ? paintableMeshes : [car];
+    const hits = raycaster.intersectObjects(targets, true);
+    
+    if (hits.length > 0) {
+      // Met à jour la position du dernier logo manipulé
+      if (logos.length > 0) {
+        const lastLogo = logos[logos.length - 1];
+        lastLogo.userData.target = hits[0].object;
+        lastLogo.userData.position.copy(hits[0].point);
+        lastLogo.userData.normal.copy(hits[0].face.normal).transformDirection(hits[0].object.matrixWorld);
+        updateLastLogo();
+      }
+    }
+  }
+});
+
+renderer.domElement.addEventListener("pointerup", function (event) {
+  if (decal.dragging) {
+    decal.dragging = false;
+    controls.enabled = true;
+    return;
+  }
+
+  // Comportement Tactile / Clic : Pose le logo si on n'a pas bougé la caméra
+  const dist = Math.hypot(event.clientX - ptrDown.x, event.clientY - ptrDown.y);
+  if (dist > 15 || !car || !currentLogoState.texture) return;
+
+  raycaster.setFromCamera(mouse, camera);
   const targets = paintableMeshes.length ? paintableMeshes : [car];
   const hits = raycaster.intersectObjects(targets, true);
   
   if (hits.length > 0) {
     placeLogo(hits[0]);
-    if (hintPill) hintPill.textContent = "✅ Logo collé ! Ajustez sa taille à gauche, ou cliquez ailleurs pour en poser un autre.";
+    if (hintPill) hintPill.textContent = "✅ Logo collé ! Ajustez sa taille, ou visez ailleurs et appuyez sur ESPACE.";
+  }
+});
+
+// --- NOUVEAUTÉ : POSE DU LOGO AVEC LA TOUCHE ESPACE ---
+window.addEventListener("keydown", function (event) {
+  // Si la touche appuyée est "Espace" (code 32)
+  if (event.code === "Space") {
+    event.preventDefault(); // Empêche la page de défiler vers le bas
+
+    if (!car || !currentLogoState.texture) return;
+
+    // Utilise la dernière position connue de la souris (mise à jour via pointermove)
+    raycaster.setFromCamera(mouse, camera);
+    const targets = paintableMeshes.length ? paintableMeshes : [car];
+    const hits = raycaster.intersectObjects(targets, true);
+    
+    if (hits.length > 0) {
+      placeLogo(hits[0]);
+      if (hintPill) hintPill.textContent = "✅ Logo collé ! Ajustez sa taille, ou visez ailleurs et appuyez sur ESPACE.";
+    }
   }
 });
 
